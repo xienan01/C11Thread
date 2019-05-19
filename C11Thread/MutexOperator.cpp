@@ -75,21 +75,52 @@ private:
 class DeadLock
 {
 public:
-	void operator()()
+
+	 // 发送数据的线程
+	void SendCommand(int UserCommand)
 	{
-		std::cout << "DeadLock thread ID: " << std::this_thread::get_id() << std::endl;
+		for (int i=0; i< 10; i++)
+		{
+			//my_mutex1.lock();
+			std::lock(my_mutex1, my_mutex2);
+			iNum.push_back(UserCommand);
+			std::cout << "SendCommand thread ID :   " << UserCommand  << "  +  " << std::this_thread::get_id() << std::endl;
+			my_mutex1.unlock();
+			my_mutex2.unlock();	
+		}
+	
+	}
+
+	// 接收数据的线程
+	void recvCommand()
+	{
+		for(int i=0; i< 10; i++)
+		{
+			//std::lock_guard<std::mutex> mylock(mymutex);
+			//my_mutex1.lock();
+			std::lock(my_mutex1, my_mutex2);
+			std::lock_guard<std::mutex>mymutexTest0(my_mutex1, std::adopt_lock);
+			std::lock_guard<std::mutex>mymutexTest1(my_mutex2, std::adopt_lock);
+			if(!iNum.empty())
+			{
+				int GetNumber = iNum.front();
+				std::cout << "GetCommand:  " <<  GetNumber << std::endl;
+				std::cout << "\nrecvCommand thread ID :   " << std::this_thread::get_id() << std::endl;
+			}
+			//my_mutex1.unlock();
+			//my_mutex2.unlock();
+			
+		}
+
 	}
 
 private:
+	// 线程共享数据
 	std::vector<int>iNum;  //共享数据
 	std::mutex my_mutex1;
 	std::mutex my_mutex2;
 };
 
-void DeadMutexDisplay()
-{
-	std::cout << "DeadMutexDisplay DeadLock thread ID: " << std::this_thread::get_id() << std::endl;
-}
 
 
 int main()
@@ -120,8 +151,17 @@ int main()
 	std::thread mythread3(mylambada);
 	mythread3.join();
 
-	std::thread mythread4(DeadMutexDisplay);
-	// 演示死锁
+	// std::lock()演示
+	//  1、解决死锁问题
+	int inum = 100;
+	// 创建两个线程，一个读共享数据，一个写入共享数据
+	DeadLock myobj2;
+	std::thread mythread5(&DeadLock::SendCommand, &myobj2, inum);
+	std::thread mythread6(&DeadLock::recvCommand, &myobj2);
+	mythread5.join();
+	mythread6.join();
+
+
 
 	system("pause");
 	return 0;
