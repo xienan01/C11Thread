@@ -55,6 +55,16 @@ int   main()
     Thread = CreateThread(NULL, 0, &ThirdThreadFunc, NULL, 0, &ThreadID);
     printf("Counter   should   be   1000000;   it   is->   %d\n", Counter);
 
+	//创建多线程
+	printf("----------------------------创建多个子线程简单实例----------------------------\n");
+	HANDLE handle[20];
+	int i;
+	for(i = 0; i < 20; i++)
+	{
+		handle[i] = (HANDLE)_beginthreadex(NULL, 0, SecondThreadFunc, NULL, 0, NULL);
+	}
+	WaitForMultipleObjects(20, handle, 1, INFINITE);
+
 
 #ifdef  __unix__
 	pthread_t tidp;
